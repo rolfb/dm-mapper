@@ -39,11 +39,14 @@ module DataMapper
   end
 end # module DataMapper
 
+# TODO: move this to veritas engine
 require 'veritas'
 require 'veritas-optimizer'
 
 require 'descendants_tracker'
 require 'equalizer'
+# TODO: move requiring DO to a method that initializes connections
+require 'do_postgres'
 
 require 'inflector'
 # TODO remove this once inflector includes it
@@ -51,14 +54,10 @@ require 'data_mapper/support/inflections'
 require 'data_mapper/support/graph'
 require 'data_mapper/support/utils'
 
-require 'data_mapper/engine'
-require 'data_mapper/engine/veritas_engine'
-
 require 'data_mapper/alias_set'
 
 require 'data_mapper/relation_registry'
 require 'data_mapper/relation_registry/relation_node'
-require 'data_mapper/relation_registry/relation_node/veritas_relation'
 require 'data_mapper/relation_registry/relation_edge'
 require 'data_mapper/relation_registry/connector'
 require 'data_mapper/relation_registry/connector/builder'
@@ -99,5 +98,12 @@ require 'data_mapper/relationship/many_to_many'
 
 require 'data_mapper/query'
 require 'data_mapper/model'
+
+require 'data_mapper/engine'
+require 'data_mapper/engine/veritas_engine'
+require 'data_mapper/relation_registry/relation_node/veritas_relation'
+
+require 'data_mapper/engine/arel_engine'
+require 'data_mapper/relation_registry/relation_node/arel_relation'
 
 require 'data_mapper/finalizer'

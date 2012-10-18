@@ -114,6 +114,8 @@ describe 'Relationship - Many To Many with generated mappers' do
   end
 
   it 'loads associated tags with name = good' do
+    SpecHelper.draw_relation_registry
+
     mapper = DataMapper[Song]
     songs = mapper.include(:good_tags).to_a
 

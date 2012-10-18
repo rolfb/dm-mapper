@@ -1,3 +1,5 @@
+require 'data_mapper/relation_registry/relation_node/veritas_relation'
+
 module DataMapper
   class Engine
 
