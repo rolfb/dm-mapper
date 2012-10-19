@@ -15,11 +15,11 @@ module DataMapper
           self
         end
 
-        def rename(new_aliases)
-          raise NotImplementedError
+        def join(other)
+          relation.join(other).on(other[:id].eq(relation[:user_id]))
         end
 
-        def join(other)
+        def rename(new_aliases)
           raise NotImplementedError
         end
 
@@ -40,7 +40,7 @@ module DataMapper
         end
 
         def aliases_for(relationship)
-          raise NotImplementedError
+          aliases
         end
 
         def clone_for(relationship, aliases = nil)
@@ -48,7 +48,7 @@ module DataMapper
         end
 
         def relation_for_join(relationship)
-          raise NotImplementedError
+          relation
         end
 
       end # class ArelRelation

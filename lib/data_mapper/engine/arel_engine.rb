@@ -3,38 +3,57 @@ require 'active_record' # lol
 module DataMapper
   class Engine
 
-    class GatewayRelation
-      include Enumerable
-
-      attr_reader :name
-
-      def initialize(adapter, relation)
-        @name     = relation.name
-        @header   = relation.columns
-        @adapter  = adapter
-        @relation = relation.project(*@header.map(&:name))
-      end
-
-      def each(&block)
-        return to_enum unless block_given?
-        read.each(&block)
-        self
-      end
-
-      private
-
-      def read
-        @adapter.execute(to_sql)
-      end
-
-      def to_sql
-        @relation.to_sql
-      end
-    end
-
     # Engine for Arel
     #
     class ArelEngine < self
+      class GatewayRelation
+        include Enumerable
+
+        attr_reader :name
+        attr_reader :adapter
+        attr_reader :relation
+        attr_reader :header
+
+        def initialize(adapter, relation, name = relation.name, header = relation.columns)
+          @name     = name
+          @header   = header
+          @adapter  = adapter
+          @relation = relation
+        end
+
+        def each(&block)
+          return to_enum unless block_given?
+          read.each(&block)
+          self
+        end
+
+        def [](name)
+          @relation[name]
+        end
+
+        private
+
+        def read
+          @adapter.execute(to_sql)
+        end
+
+        def to_sql
+          @relation.project(*@header.map(&:name)).to_sql
+        end
+
+        def method_missing(method, *args, &block)
+          forwardable?(method) ? forward(method, *args, &block): super
+        end
+
+        def forwardable?(method)
+          @relation.respond_to?(method)
+        end
+
+        def forward(method, *args, &block)
+          @relation.public_send(method, *args, &block)
+        end
+      end
+
       attr_reader :adapter
       attr_reader :arel_engines
 
