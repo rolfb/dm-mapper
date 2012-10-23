@@ -27,13 +27,34 @@ module DataMapper
       self
     end
 
+    # @api private
+    def target_keys_for(model)
+      relationships_for_target(model).map(&:target_key).uniq
+    end
+
+    # @api private
+    def relationships_for_target(model)
+      @base_relation_mappers.map { |mapper|
+        relationships     = mapper.relationships.select { |relationship| relationship.target_model == model }
+        names             = relationships.map(&:name)
+        via_relationships = mapper.relationships.select { |relationship| names.include?(relationship.via) }
+
+        relationships + via_relationships
+      }.flatten
+    end
+
     private
 
     def finalize_base_relation_mappers
       @base_relation_mappers.each do |mapper|
+        model = mapper.model
+
+        next if mapper_registry[model]
+
         name     = mapper.relation.name
         relation = mapper.gateway_relation
-        aliases  = mapper.aliases
+        keys     = target_keys_for(model)
+        aliases  = mapper.aliases.exclude(*keys)
 
         mapper.relations.new_node(name, relation, aliases)
 
@@ -52,17 +73,18 @@ module DataMapper
     end
 
     def finalize_relationship_mappers
-      @base_relation_mappers.each do |mapper|
-        relations = mapper.relations
+      @base_relation_mappers.map(&:relations).uniq.each do |relations|
+        relations.connectors.each_value do |connector|
+          model        = connector.source_model
+          relationship = connector.relationship.name
+          mapper_class = mapper_registry[model].class
+          mapper       = mapper_builder.call(connector, mapper_class)
 
-        relations.edges.each do |edge|
-          connector           = relations.connectors[edge.name]
-          source_mapper_class = mapper_registry[connector.source_model].class
-          mapper              = mapper_builder.call(connector, source_mapper_class)
-
-          next if mapper_registry[connector.source_model, connector.relationship]
-
-          mapper_registry.register(mapper, connector.relationship)
+          if mapper_registry[model, relationship]
+            next
+          else
+            mapper_registry.register(mapper, relationship)
+          end
         end
       end
 

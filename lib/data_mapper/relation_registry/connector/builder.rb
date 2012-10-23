@@ -2,55 +2,89 @@ module DataMapper
   class RelationRegistry
     class Connector
 
+      # Builds connectors and register relation nodes for a given relationship
+      #
       class Builder
+        attr_reader :mappers
+        attr_reader :relations
+        attr_reader :relationship
 
+        attr_reader :connector
+        attr_reader :node
+
+        SEPARATOR = 'X'.freeze
+
+        # @api public
         def self.call(mappers, relations, relationship)
-          left_mapper  = mappers[relationship.source_model]
-          right_mapper = mappers[relationship.target_model]
+          klass = relationship.via ? ViaConnector : Builder
+          klass.new(mappers, relations, relationship)
+        end
 
-          left_node =
-            if relationship.via
-              via_relationship = left_mapper.relationships[relationship.via]
-              via_name         = :"#{left_mapper.relation.name}_#{via_relationship.name}"
+        # @api private
+        def initialize(mappers, relations, relationship)
+          @mappers, @relations, @relationship = mappers, relations, relationship
+          initialize_connector
+          freeze
+        end
 
-              via_relation =
-                if relations[via_name]
-                  relations[via_name]
-                else
-                  call(mappers, relations, via_relationship).aliased_for(relationship)
-                end.relation
-
-              relations.build_node(via_name, via_relation)
-            else
-              relations.node_for(left_mapper.relation)
-            end
-
-          right_node =
-            if via_relationship
-              relations.node_for(right_mapper.relation).aliased_for(via_relationship)
-            else
-              relations.node_for(right_mapper.relation)
-            end
-
+        # @api private
+        def initialize_connector
           unless left_node && right_node
             raise ArgumentError, "Missing left and/or right nodes for #{relationship.name} left: #{left_node.inspect} right: #{right_node.inspect}"
           end
 
-          relations.add_node(left_node)  unless relations[left_node.name]
-          relations.add_node(right_node) unless relations[right_node.name]
+          @connector = Connector.new(name, build_edge, relationship)
+          @node      = relations.build_node(name, @connector.relation)
 
-          edge = relations.edges.detect { |e| e.name == relationship.name }
+          relations.add_connector(@connector)
+          relations.add_node(@node)
+        end
+
+        # @api private
+        def name
+          @name ||= :"#{left_name}_#{SEPARATOR}_#{right_name}"
+        end
+
+        # @api private
+        def left_name
+          left_node.name
+        end
+
+        # @api private
+        def right_name
+          relationship.name
+        end
+
+        # @api private
+        def left_node
+          @left_node ||= relations.node_for(left_mapper.relation)
+        end
+
+        # @api private
+        def right_node
+          @right_node ||= relations.node_for(right_mapper.relation)
+        end
+
+        # @api private
+        def left_mapper
+          @left_mapper ||= mappers[relationship.source_model]
+        end
+
+        # @api private
+        def right_mapper
+          @right_mapper ||= mappers[relationship.target_model]
+        end
+
+        # @api private
+        def build_edge
+          edge = relations.edges.detect { |e| e.connects?(left_node) }
 
           unless edge
             edge = relations.build_edge(relationship.name, left_node, right_node)
             relations.add_edge(edge)
           end
 
-          connector = Connector.new(edge, relationship)
-
-          relations.add_connector(connector)
-
-          connector
+          edge
         end
 
       end # class Builder
