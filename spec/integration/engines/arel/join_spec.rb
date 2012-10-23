@@ -8,6 +8,8 @@ DataMapper.setup(
 
 describe "Using Arel engine" do
   before(:all) do
+    pending
+
     setup_db
 
     insert_user 1, 'John',  18

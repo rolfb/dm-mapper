@@ -16,7 +16,12 @@ module DataMapper
         end
 
         def join(other)
-          relation.join(other).on(other[:id].eq(relation[:user_id]))
+          raise NotImplementedError
+
+          left  = relation
+          right = other.relation
+
+          left.join(right).on(left[:id].eq(right[:user_id]))
         end
 
         def rename(new_aliases)
@@ -33,22 +38,6 @@ module DataMapper
 
         def sort_by(&block)
           raise NotImplementedError
-        end
-
-        def aliased_for(relationship)
-          raise NotImplementedError
-        end
-
-        def aliases_for(relationship)
-          aliases
-        end
-
-        def clone_for(relationship, aliases = nil)
-          raise NotImplementedError
-        end
-
-        def relation_for_join(relationship)
-          relation
         end
 
       end # class ArelRelation

@@ -27,8 +27,8 @@ module DataMapper
           self
         end
 
-        def [](name)
-          @relation[name]
+        def join(other)
+          raise NotImplementedError
         end
 
         private
@@ -39,18 +39,6 @@ module DataMapper
 
         def to_sql
           @relation.project(*@header.map(&:name)).to_sql
-        end
-
-        def method_missing(method, *args, &block)
-          forwardable?(method) ? forward(method, *args, &block): super
-        end
-
-        def forwardable?(method)
-          @relation.respond_to?(method)
-        end
-
-        def forward(method, *args, &block)
-          @relation.public_send(method, *args, &block)
         end
       end
 
