@@ -24,6 +24,10 @@ module DataMapper
           left.join(right).on(left[:id].eq(right[:user_id]))
         end
 
+        def base?
+          relation.kind_of?(Arel::Table)
+        end
+
         def rename(new_aliases)
           raise NotImplementedError
         end
