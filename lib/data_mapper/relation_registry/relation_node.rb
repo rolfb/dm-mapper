@@ -4,14 +4,15 @@ module DataMapper
     class RelationNode < Graph::Node
       include Enumerable
 
-      attr_reader :relation
+      include Equalizer.new(:name, :relation)
 
+      attr_reader :relation
       attr_reader :aliases
 
       def initialize(name, relation, aliases = nil)
         super(name)
         @relation = relation
-        @aliases  = aliases || AliasSet.new(name)
+        @aliases  = aliases || {}
       end
 
     end # class RelationNode

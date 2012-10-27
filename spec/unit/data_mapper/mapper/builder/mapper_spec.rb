@@ -21,21 +21,24 @@ describe Mapper::Builder, '#mapper' do
   let(:target_attributes)   { Mapper::AttributeSet.new << Mapper::Attribute.build(:id, :type => Integer) << Mapper::Attribute.build(:user_id, :type => Integer) << Mapper::Attribute.build(:product, :type => String) }
   let(:target_mapper_class) { mock_mapper(target_model, target_attributes)}
 
+  let(:relations) { source_mapper_class.relations }
+
   context "when connector is not via other" do
     let(:connector) {
       mock_connector(
-        :name               => :users_X_orders,
+        :name               => :orders,
+        :left               => mock_node(:users),
+        :right              => mock_node(:orders),
         :source_model       => source_model,
         :target_model       => target_model,
         :source_name        => :users,
         :target_name        => :orders,
         :source_aliases     => AliasSet.new(:user, source_attributes),
         :target_aliases     => AliasSet.new(:order, target_attributes, [ :user_id ]),
-        :via?               => is_via,
-        :via                => via,
         :collection_target? => is_collection_target,
         :relationship       => relationship,
-        :relation           => relation
+        :relation           => relation,
+        :relations          => relations
       )
     }
 
@@ -77,46 +80,49 @@ describe Mapper::Builder, '#mapper' do
     let(:via)            { :user_order_infos }
     let(:other_relation) { mock('other_relation') }
 
-    let(:other_target_model)        { mock_model('UserOrderInfo')  }
-    let(:other_target_attributes)   { Mapper::AttributeSet.new << Mapper::Attribute.build(:user_id, :type => Integer) << Mapper::Attribute.build(:order_id, :type => Integer) }
-    let(:other_target_mapper_class) { mock_mapper(other_target_model, other_target_attributes) }
+    let(:via_source_model)        { mock_model('UserOrderInfo')  }
+    let(:via_source_attributes)   { Mapper::AttributeSet.new << Mapper::Attribute.build(:user_id, :type => Integer) << Mapper::Attribute.build(:order_id, :type => Integer) }
+    let(:via_source_mapper_class) { mock_mapper(via_source_model, via_source_attributes) }
 
     let(:connector) {
       mock_connector(
         :name               => :users_X_user_order_infos_X_orders,
+        :left               => mock_node(:users),
+        :right              => mock_node(:user_order_infos_X_orders),
         :source_model       => source_model,
         :target_model       => target_model,
-        :source_name        => :users_X_user_order_infos,
-        :target_name        => :orders,
-        :source_aliases     => AliasSet.new(:user, source_attributes),
-        :target_aliases     => AliasSet.new(:order, target_attributes, [ :user_id ]),
-        :via?               => true,
-        :via                => via,
+        :source_name        => :users,
+        :target_name        => :user_order_infos_X_orders,
+        :source_aliases     => AliasSet.new(:user, source_attributes, [ :name ]),
+        :target_aliases     => AliasSet.new(:order, target_attributes, [ :user_id, :product ]),
         :collection_target? => is_collection_target,
         :relationship       => relationship,
-        :relation           => relation
+        :relation           => relation,
+        :relations          => relations
       )
     }
 
     let(:via_connector) {
       mock_connector(
-        :name               => :users_X_user_order_infos,
-        :source_name        => :users,
-        :target_name        => :users_order_infos,
-        :source_model       => source_model,
-        :target_model       => other_target_model,
-        :source_aliases     => AliasSet.new(:user, source_attributes, [ :name ]),
-        :target_aliases     => AliasSet.new(:user_order_info, other_target_attributes, [ :user_id, :order_id ]),
-        :via?               => false,
+        :name               => :user_order_infos_X_orders,
+        :left               => mock_node(:orders),
+        :right              => mock_node(:user_order_infos),
+        :source_name        => :user_order_infos,
+        :target_name        => :orders,
+        :source_model       => via_source_model,
+        :target_model       => target_model,
+        :source_aliases     => AliasSet.new(:user_order_info, via_source_attributes, [ :user_id, :order_id ]),
+        :target_aliases     => AliasSet.new(:order, target_attributes, [ :user_id, :product ]),
         :relationship       => via_relationship,
         :collection_target? => true,
-        :relation           => other_relation
+        :relation           => other_relation,
+        :relations          => relations
       )
     }
 
     before do
       DataMapper.mapper_registry << target_mapper_class.new(relation)
-      DataMapper.mapper_registry << other_target_mapper_class.new(other_relation)
+      DataMapper.mapper_registry << via_source_mapper_class.new(other_relation)
 
       source_mapper_class.relations.add_connector(connector)
       source_mapper_class.relations.add_connector(via_connector)
@@ -124,8 +130,8 @@ describe Mapper::Builder, '#mapper' do
 
     it { should be_kind_of(Mapper::Relation) }
 
-    it "remaps source model attributes using via connector aliases" do
-      subject.attributes[:name].field.should eql(:username)
+    it "remaps target model attributes using connector aliases" do
+      subject.attributes[:orders].mapper.attributes[:product].field.should eql(:product)
     end
   end
 end

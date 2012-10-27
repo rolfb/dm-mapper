@@ -3,25 +3,15 @@ module DataMapper
 
     class Connector
       attr_reader :name
-      attr_reader :edge
-      attr_reader :source_node
-      attr_reader :target_node
+      attr_reader :node
       attr_reader :relationship
-      attr_reader :operation
+      attr_reader :relations
 
-      def initialize(name, edge, relationship)
-        @name         = name
-        @edge         = edge
-        @source_node  = edge.left
-        @target_node  = edge.right
+      def initialize(name, node, relationship, relations)
+        @name         = name.to_sym
+        @node         = node
         @relationship = relationship
-        @operation    = relationship.operation
-      end
-
-      def relation
-        join = source_node.join(target_node).relation
-        join = join.instance_eval(&operation) if operation
-        join
+        @relations    = relations
       end
 
       def source_model
@@ -33,27 +23,11 @@ module DataMapper
       end
 
       def source_aliases
-        source_node.aliases
+        relations[DataMapper[source_model].class.relation_name].aliases
       end
 
       def target_aliases
-        target_node.aliases
-      end
-
-      def source_name
-        source_node.name
-      end
-
-      def target_name
-        target_node.name
-      end
-
-      def via?
-        ! via.nil?
-      end
-
-      def via
-        relationship.via
+        relations[DataMapper[target_model].class.relation_name].aliases
       end
 
       def collection_target?

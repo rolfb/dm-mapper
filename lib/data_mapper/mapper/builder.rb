@@ -8,7 +8,7 @@ module DataMapper
       end
 
       def initialize(connector, source_mapper_class)
-        @connector     = connector
+        @connector          = connector
         @source_model  = @connector.source_model
         @target_model  = @connector.target_model
         @source_mapper = source_mapper_class
@@ -17,7 +17,7 @@ module DataMapper
       end
 
       def mapper
-        mapper_class.new(@connector.relation)
+        mapper_class.new(@connector.node)
       end
 
       private
@@ -50,31 +50,21 @@ module DataMapper
       end
 
       def source_aliases
-        if @connector.via?
-          determine_source_aliases(@connector)
-        else
-          @connector.source_aliases
-        end
+        @connector.source_aliases
       end
 
-      def determine_source_aliases(connector)
-        via_connector = @source_mapper.relations.connectors[connector.source_name]
-
-        if via_connector.via?
-          determine_source_aliases(via_connector)
-        else
-          via_connector.source_aliases
-        end
+      def target_aliases
+        @connector.target_aliases
       end
 
       def mapper_name
-        "#{@source_model.name}_X_#{Inflector.camelize(@connector.name.to_s)}_Mapper"
+        "#{@source_mapper.name}_X_#{Inflector.camelize(@connector.name.to_s)}_Mapper"
       end
 
       def target_model_attribute_options
         {
           :collection => @connector.collection_target?,
-          :aliases    => @connector.target_aliases
+          :aliases    => target_aliases
         }
       end
     end # class Builder

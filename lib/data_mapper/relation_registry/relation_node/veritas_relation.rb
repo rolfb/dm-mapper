@@ -17,12 +17,17 @@ module DataMapper
           self
         end
 
+        def base?
+          veritas_relation = relation.respond_to?(:relation) ? relation.send(:relation) : relation
+          veritas_relation.instance_of?(Veritas::Relation::Base)
+        end
+
         def rename(new_aliases)
           self.class.new(name, relation, aliases.merge(new_aliases))
         end
 
         def aliased
-          self.class.new(name, relation.rename(aliases), aliases)
+          self.class.new(name, relation.rename(aliases))
         end
 
         def join(other)

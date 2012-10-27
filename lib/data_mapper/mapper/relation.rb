@@ -65,6 +65,16 @@ module DataMapper
       end
 
       # @api public
+      def relation_name
+        self.class.relation_name
+      end
+
+      # @api public
+      def model
+        self.class.model
+      end
+
+      # @api public
       def inspect
         "<##{self.class.name}:#{object_id} @model=#{@model} @repository=#{self.class.repository} @relation=#{@relation}>"
       end
@@ -104,7 +114,7 @@ module DataMapper
 
       # @api public
       def include(name)
-        Mapper.mapper_registry[self.class.model, name]
+        Mapper.mapper_registry[self.class.model, relationships[name]]
       end
 
       # @api public
